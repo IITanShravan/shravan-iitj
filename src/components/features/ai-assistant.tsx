@@ -23,6 +23,7 @@ export default function AiAssistant() {
   const [input, setInput] = useState("");
   const [isTyping, setIsTyping] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const hasMounted = useRef(false);
 
   const suggestions = [
     `What is ${portfolioData.personalInfo.name.split(" ")[0]}'s CGPA?`,
@@ -32,6 +33,10 @@ export default function AiAssistant() {
   ];
 
   useEffect(() => {
+    if (!hasMounted.current) {
+      hasMounted.current = true;
+      return;
+    }
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, isTyping]);
 

@@ -1,14 +1,17 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import Link from "next/link";
-import { ArrowRight, FileText, Zap } from "lucide-react";
+import { ArrowRight, FileText, Zap, Volume2, VolumeX } from "lucide-react";
 import { usePortfolio } from "@/components/layout/portfolio-provider";
 import AiAssistant from "@/components/features/ai-assistant";
 
 export default function Home() {
   const { portfolioData } = usePortfolio();
   const { personalInfo } = portfolioData;
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const [isMuted, setIsMuted] = useState(true); // Default to muted for secure browser autoplay bypass
+
   const [typedText, setTypedText] = useState("");
   const titles = [
     "AI & Data Science Student",
@@ -20,6 +23,42 @@ export default function Home() {
   const [titleIdx, setTitleIdx] = useState(0);
   const [charIdx, setCharIdx] = useState(0);
   const [isDeleting, setIsDeleting] = useState(false);
+
+  // Attempt unmuted autoplay on mount
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+
+    // Force audio configuration based on browser support
+    video.muted = false;
+    setIsMuted(false);
+
+    const playPromise = video.play();
+    if (playPromise !== undefined) {
+      playPromise.catch((error) => {
+        console.log("Initial unmuted autoplay blocked:", error.message);
+        // Unmuted autoplay blocked by browser policy, fallback to muted autoplay
+        video.muted = true;
+        setIsMuted(true);
+        
+        const secondPlayPromise = video.play();
+        if (secondPlayPromise !== undefined) {
+          secondPlayPromise.catch((err) => {
+            // Silently catch power-saving or visibility-based play interruptions
+            console.log("Autoplay play() request was prevented:", err.message);
+          });
+        }
+      });
+    }
+  }, []);
+
+  const toggleMute = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    const video = videoRef.current;
+    if (!video) return;
+    video.muted = !isMuted;
+    setIsMuted(!isMuted);
+  };
 
   // Typing effect hook
   useEffect(() => {
@@ -95,29 +134,50 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Dynamic Holographic Placeholder Image */}
+        {/* Dynamic Holographic 16:9 Video Container */}
         <div className="flex-1 w-full flex items-center justify-center">
-          <div className="relative w-64 h-64 sm:w-80 sm:h-80 group">
-            {/* Holographic glowing rings */}
-            <div className="absolute inset-0 rounded-full border border-cyan-500/20 animate-spin" style={{ animationDuration: '20s' }} />
-            <div className="absolute inset-2 rounded-full border border-dashed border-indigo-500/10 animate-spin" style={{ animationDuration: '15s', animationDirection: 'reverse' }} />
+          <div className="relative w-full max-w-lg aspect-video group rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-black overflow-hidden shadow-lg hover:border-cyan-500/40 transition-all duration-500">
+            {/* Subtle glow behind the player */}
+            <div className="absolute inset-0 bg-gradient-to-tr from-cyan-500/5 to-indigo-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
             
-            {/* Pulsing glow background */}
-            <div className="absolute inset-6 rounded-full bg-gradient-to-tr from-cyan-500/10 to-indigo-500/10 blur-xl opacity-80 group-hover:scale-110 transition-transform duration-500" />
+            {/* Loop video with voice capabilities */}
+            <video
+              ref={videoRef}
+              src="/Portfolio_intro_video_creation.mp4"
+              className="w-full h-full object-cover group-hover:scale-[1.01] transition-transform duration-500"
+              autoPlay
+              loop
+              playsInline
+            />
+            
+            {/* Cyber corner marks matching the sci-fi portfolio aesthetic */}
+            <div className="absolute top-2 left-2 w-2 h-2 border-t border-l border-cyan-500/30 group-hover:border-cyan-500/70 transition-colors" />
+            <div className="absolute top-2 right-2 w-2 h-2 border-t border-r border-cyan-500/30 group-hover:border-cyan-500/70 transition-colors" />
+            <div className="absolute bottom-2 left-2 w-2 h-2 border-b border-l border-cyan-500/30 group-hover:border-cyan-500/70 transition-colors" />
+            <div className="absolute bottom-2 right-2 w-2 h-2 border-b border-r border-cyan-500/30 group-hover:border-cyan-500/70 transition-colors" />
 
-            {/* Core Avatar Frame */}
-            <div className="absolute inset-6 rounded-full border border-zinc-200 dark:border-zinc-800/80 bg-white dark:bg-zinc-900 overflow-hidden flex items-center justify-center shadow-inner group-hover:border-cyan-500/50 transition-all duration-500">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={personalInfo.avatarPlaceholder}
-                alt="Shravan Kumar Avatar"
-                className="w-full h-full object-cover group-hover:scale-105 transition-all duration-500"
-              />
-            </div>
-            
-            {/* Corner visual items */}
-            <div className="absolute bottom-6 right-6 p-2 rounded-lg bg-zinc-900 border border-cyan-500/40 text-cyan-400 font-mono text-[9px] shadow-lg shadow-black/50">
-              IIT Jodhpur &apos;28
+            {/* Interactive Holographic Sound Controller Button Overlay */}
+            <button
+              onClick={toggleMute}
+              className="absolute bottom-3 right-3 z-20 flex items-center space-x-1.5 px-2.5 py-1.5 rounded-lg border border-cyan-500/30 bg-black/80 hover:bg-cyan-500/10 text-cyan-400 hover:text-cyan-300 font-mono text-[9px] font-bold cursor-pointer transition-all duration-300 shadow-md animate-pulse"
+            >
+              {isMuted ? (
+                <>
+                  <VolumeX className="w-3.5 h-3.5 text-zinc-400" />
+                  <span>🔊 PLAY AUDIO</span>
+                </>
+              ) : (
+                <>
+                  <Volume2 className="w-3.5 h-3.5 text-cyan-400 animate-bounce" />
+                  <span>MUTE AUDIO</span>
+                </>
+              )}
+            </button>
+
+            {/* Simulated HUD specs label */}
+            <div className="absolute bottom-3 left-3 flex items-center space-x-1.5 text-[8px] font-mono bg-black/70 px-2 py-0.5 border border-zinc-800/80 rounded text-zinc-400 select-none">
+              <span className="h-1 w-1 rounded-full bg-cyan-500 animate-pulse" />
+              <span>NODE: INTRO_STREAM // {isMuted ? "muted" : "unmuted"}</span>
             </div>
           </div>
         </div>
